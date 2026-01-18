@@ -9,8 +9,6 @@ x-service-template: &service-template
   env_file:
     - .env
   environment:
-    - APP_ENV=production
-    - DEBUG=false
     - HOST=0.0.0.0
     - PORT=8000
     # Identifying the instance for logs
