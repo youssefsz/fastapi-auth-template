@@ -1,0 +1,61 @@
+# ============================================
+# FastAPI Auth Template - Docker Compose
+# Configured for Zero Downtime (Blue/Green)
+# ============================================
+
+x-service-template: &service-template
+  build: .
+  restart: unless-stopped
+  env_file:
+    - .env
+  environment:
+    - APP_ENV=production
+    - DEBUG=false
+    - HOST=0.0.0.0
+    - PORT=8000
+    # Identifying the instance for logs
+    - INSTANCE_ID={{.Name}}
+  networks:
+    - traefik
+  deploy:
+    resources:
+      limits:
+        cpus: '0.5'
+        memory: 512M
+
+services:
+  # ============================================
+  # Blue Instance
+  # ============================================
+  blue:
+    <<: *service-template
+    container_name: fastapi-auth-blue
+    labels:
+      - "traefik.enable=true"
+      # Router - Distinct name but SAME Host rule
+      - "traefik.http.routers.fastapi-auth-blue.rule=Host(`auth.youssef.run.place`)"
+      - "traefik.http.routers.fastapi-auth-blue.entrypoints=websecure"
+      - "traefik.http.routers.fastapi-auth-blue.tls.certresolver=myresolver"
+      - "traefik.http.routers.fastapi-auth-blue.middlewares=default-chain@file"
+      # Service
+      - "traefik.http.services.fastapi-auth-blue.loadbalancer.server.port=8000"
+
+  # ============================================
+  # Green Instance
+  # ============================================
+  green:
+    <<: *service-template
+    container_name: fastapi-auth-green
+    labels:
+      - "traefik.enable=true"
+      # Router - Distinct name but SAME Host rule
+      - "traefik.http.routers.fastapi-auth-green.rule=Host(`auth.youssef.run.place`)"
+      - "traefik.http.routers.fastapi-auth-green.entrypoints=websecure"
+      - "traefik.http.routers.fastapi-auth-green.tls.certresolver=myresolver"
+      - "traefik.http.routers.fastapi-auth-green.middlewares=default-chain@file"
+      # Service
+      - "traefik.http.services.fastapi-auth-green.loadbalancer.server.port=8000"
+
+networks:
+  traefik:
+    external: true
