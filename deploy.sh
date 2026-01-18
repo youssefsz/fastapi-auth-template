@@ -27,7 +27,7 @@ echo "🎯 Deploying to: $TARGET"
 # 2. Build and start the target container
 # We explicitly build to ensure we have the latest code
 echo "📦 Building and starting $TARGET..."
-docker compose up -d --build $TARGET
+docker compose up -d --build --force-recreate $TARGET
 
 # 3. Wait for the health check to pass
 echo "🏥 Waiting for health check to pass..."

@@ -15,6 +15,7 @@ x-service-template: &service-template
     - INSTANCE_ID={{.Name}}
   networks:
     - traefik
+    - db_network
   deploy:
     resources:
       limits:
@@ -57,3 +58,6 @@ services:
 networks:
   traefik:
     external: true
+  db_network:
+    external: true
+    name: postgres-server_db_network
