@@ -9,7 +9,8 @@ from collections.abc import AsyncGenerator
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
@@ -112,7 +113,17 @@ A secure, scalable authentication system built with FastAPI.
             "name": settings.app_name,
             "version": __version__,
             "docs": "/docs" if settings.debug else "Disabled in production",
+            "test": "/test",
         }
+
+    # Test page endpoint
+    @app.get("/test", include_in_schema=False, response_class=HTMLResponse)
+    async def test_page() -> HTMLResponse:
+        """Serve the authentication test page."""
+        import os
+        static_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "test.html")
+        with open(static_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
 
     # Global exception handler
     @app.exception_handler(Exception)

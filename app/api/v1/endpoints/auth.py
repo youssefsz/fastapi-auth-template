@@ -436,11 +436,11 @@ async def google_callback(
         )
     except OAuthException as e:
         # Redirect to frontend with error
-        error_url = f"{settings.frontend_url}/test.html#error={e.message}"
+        error_url = f"{settings.frontend_url}/test#error={e.message}"
         return RedirectResponse(url=error_url, status_code=status.HTTP_302_FOUND)
 
     # Build redirect URL with tokens in fragment (not logged by servers)
-    # Format: /test.html#access_token=...&refresh_token=...&user=...
+    # Format: /test#access_token=...&refresh_token=...&user=...
     import json
     from urllib.parse import quote
     
@@ -458,7 +458,7 @@ async def google_callback(
     user_json = quote(json.dumps(user_data))
     
     redirect_url = (
-        f"{settings.frontend_url}/test.html"
+        f"{settings.frontend_url}/test"
         f"#access_token={access_token}"
         f"&refresh_token={refresh_token}"
         f"&user={user_json}"

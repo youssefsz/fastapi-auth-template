@@ -73,6 +73,18 @@ app/
   services/           # Business logic
   main.py             # Application factory
 alembic/              # Database migrations
+static/               # Static files (test.html)
+```
+
+## Test Page
+
+The API includes a built-in test page at `/test` for interactive testing of authentication flows.
+
+```bash
+# Start server
+uv run uvicorn app.main:app --reload
+
+# Open http://localhost:8000/test in browser
 ```
 
 ## API Endpoints
