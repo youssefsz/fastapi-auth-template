@@ -409,7 +409,11 @@ async def google_login(
     # Dynamic redirect URI based on current request
     redirect_uri = str(request.url_for("google_callback"))
     
-    if settings.is_production and redirect_uri.startswith("http:"):
+    # Ensure HTTPS in production or if proxy headers indicate HTTPS
+    # This fixes the redirect_uri_mismatch error when behind a proxy where
+    # the app receives HTTP but the client uses HTTPS
+    forwarded_proto = request.headers.get("x-forwarded-proto")
+    if (settings.is_production or forwarded_proto == "https") and redirect_uri.startswith("http:"):
         redirect_uri = "https" + redirect_uri[4:]
 
     oauth_service = GoogleOAuthService(db=None)  # type: ignore
@@ -469,7 +473,9 @@ async def google_callback(
     # Dynamic redirect URI based on current request
     redirect_uri = str(request.url_for("google_callback"))
     
-    if settings.is_production and redirect_uri.startswith("http:"):
+    # Ensure HTTPS in production or if proxy headers indicate HTTPS
+    forwarded_proto = request.headers.get("x-forwarded-proto")
+    if (settings.is_production or forwarded_proto == "https") and redirect_uri.startswith("http:"):
         redirect_uri = "https" + redirect_uri[4:]
 
     try:

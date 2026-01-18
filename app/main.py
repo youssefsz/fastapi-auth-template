@@ -20,6 +20,7 @@ from app.core.config import settings
 from app.db.session import close_db, init_db
 from app.middleware.rate_limit import limiter
 from app.middleware.security import RequestValidationMiddleware, SecurityHeadersMiddleware
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 
 @asynccontextmanager
@@ -100,6 +101,9 @@ A secure, scalable authentication system built with FastAPI.
     )
 
     # Add security middleware
+    # Trust proxy headers (X-Forwarded-Proto, X-Forwarded-For)
+    # This is crucial for correct URL generation behind a proxy (HTTPS)
+    app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(RequestValidationMiddleware)
 
