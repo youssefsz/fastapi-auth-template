@@ -57,8 +57,6 @@ Optional variables for Google OAuth:
 |----------|-------------|
 | `GOOGLE_CLIENT_ID` | OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | OAuth client secret |
-| `GOOGLE_REDIRECT_URI` | OAuth callback URL |
-| `FRONTEND_URL` | Frontend URL for OAuth redirects |
 
 ## Project Structure
 
@@ -110,7 +108,7 @@ POST /api/v1/auth/password-reset/confirm
 ### Google OAuth
 
 ```
-GET  /api/v1/auth/google           Initiate OAuth flow
+GET  /api/v1/auth/google           Initiate OAuth flow (Optional: ?redirect_to=URL)
 GET  /api/v1/auth/google/callback  OAuth callback
 DELETE /api/v1/auth/google/unlink  Unlink Google account
 ```
@@ -151,12 +149,26 @@ alembic downgrade -1
 ```
 
 ## Google OAuth Setup
-
 1. Create project in Google Cloud Console
 2. Enable Google+ API
 3. Create OAuth 2.0 credentials (Web application)
 4. Add authorized redirect URI: `http://localhost:8000/api/v1/auth/google/callback`
+   - **Important**: You must add the callback URL for **every environment** where the API runs (e.g. `https://your-domain.com/api/v1/auth/google/callback`). The system dynamically generates the redirect URI based on the request host.
 5. Copy Client ID and Secret to `.env`
+
+## Frontend Integration
+
+The API is designed to work with separate frontends (React, Vue, Mobile, etc.) running on different domains.
+
+### OAuth Login Flow
+1. Frontend redirects user to: `GET /api/v1/auth/google?redirect_to=https://your-frontend.com/dashboard`
+2. User logs in with Google.
+3. API redirects back to: `https://your-frontend.com/dashboard#access_token=...&refresh_token=...`
+4. Frontend extracts tokens from the URL fragment.
+
+### CORS
+Enable CORS for your frontend domain in `.env`:
+`CORS_ORIGINS=http://localhost:3000,https://your-frontend.com`
 
 ## Security
 

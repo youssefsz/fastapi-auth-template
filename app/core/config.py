@@ -54,10 +54,7 @@ class Settings(BaseSettings):
     # Google OAuth
     google_client_id: str = Field(default="", description="Google OAuth client ID")
     google_client_secret: str = Field(default="", description="Google OAuth client secret")
-    google_redirect_uri: str = Field(
-        default="http://localhost:8000/api/v1/auth/google/callback",
-        description="Google OAuth redirect URI",
-    )
+
     # Frontend URL for OAuth callback redirect
     frontend_url: str = Field(
         default="http://localhost:8000",

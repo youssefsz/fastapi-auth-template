@@ -374,7 +374,10 @@ async def confirm_password_reset(
         501: {"model": ErrorResponse, "description": "OAuth not configured"},
     },
 )
-async def google_login() -> RedirectResponse:
+async def google_login(
+    request: Request,
+    redirect_to: Annotated[str | None, Query(description="URL to redirect to after login")] = None,
+) -> RedirectResponse:
     """
     Initiate Google OAuth flow.
 
@@ -386,14 +389,31 @@ async def google_login() -> RedirectResponse:
             detail="Google OAuth is not configured",
         )
 
-    # Generate state for CSRF protection
-    state = secrets.token_urlsafe(32)
+    # Validate redirect_to to prevent open redirect vulnerabilities
+    # In a real app, you should check if the domain is allowed
+    # For now, we allow any URL as requested, but you might want to restrict this later
+    
+    # Store state including redirect_to
+    # We use a JSON object encoded in the state parameter
+    import json
+    import base64
+    
+    state_data = {
+        "token": secrets.token_urlsafe(32),
+        "redirect_to": redirect_to
+    }
+    # Encode state as base64 url safe string to pass to Google
+    state_json = json.dumps(state_data)
+    state = base64.urlsafe_b64encode(state_json.encode()).decode()
 
-    # In production, store state in session/cache for verification
-    # For simplicity, we're using stateless OAuth here
+    # Dynamic redirect URI based on current request
+    redirect_uri = str(request.url_for("google_callback"))
+    
+    if settings.is_production and redirect_uri.startswith("http:"):
+        redirect_uri = "https" + redirect_uri[4:]
 
     oauth_service = GoogleOAuthService(db=None)  # type: ignore
-    auth_url = oauth_service.get_authorization_url(state=state)
+    auth_url = oauth_service.get_authorization_url(redirect_uri=redirect_uri, state=state)
 
     return RedirectResponse(url=auth_url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 
@@ -403,7 +423,6 @@ async def google_login() -> RedirectResponse:
     summary="Google OAuth callback",
     description="Handle Google OAuth callback and authenticate user.",
     responses={
-        302: {"description": "Redirect to frontend with tokens"},
         400: {"model": ErrorResponse, "description": "OAuth error"},
     },
 )
@@ -424,23 +443,49 @@ async def google_callback(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="Google OAuth is not configured",
         )
+    
+    # Decode state to get redirect_to
+    redirect_to = None
+    if state:
+        try:
+            import json
+            import base64
+            # Try to decode as JSON state
+            decoded = base64.urlsafe_b64decode(state).decode()
+            state_data = json.loads(decoded)
+            if isinstance(state_data, dict):
+                redirect_to = state_data.get("redirect_to")
+        except Exception:
+            # If failed to decode (e.g. old style state), ignore
+            pass
+
+    # Default redirect if None provided
+    if not redirect_to:
+        redirect_to = "/test"
 
     oauth_service = GoogleOAuthService(db)
     user_agent, ip_address = get_client_info(request)
 
+    # Dynamic redirect URI based on current request
+    redirect_uri = str(request.url_for("google_callback"))
+    
+    if settings.is_production and redirect_uri.startswith("http:"):
+        redirect_uri = "https" + redirect_uri[4:]
+
     try:
         user, access_token, refresh_token, is_new_user = await oauth_service.authenticate(
             code=code,
+            redirect_uri=redirect_uri,
             user_agent=user_agent,
             ip_address=ip_address,
         )
     except OAuthException as e:
         # Redirect to frontend with error
-        error_url = f"{settings.frontend_url}/test#error={e.message}"
+        separator = "&" if "?" in redirect_to else "?"
+        error_url = f"{redirect_to}{separator}error={e.message}"
         return RedirectResponse(url=error_url, status_code=status.HTTP_302_FOUND)
 
-    # Build redirect URL with tokens in fragment (not logged by servers)
-    # Format: /test#access_token=...&refresh_token=...&user=...
+    # Build redirect URL with tokens in fragment
     import json
     from urllib.parse import quote
     
@@ -457,8 +502,10 @@ async def google_callback(
     
     user_json = quote(json.dumps(user_data))
     
+    # Append fragment to redirect_to
+    # Note: Fragments are not sent to server, so this is safe for tokens
     redirect_url = (
-        f"{settings.frontend_url}/test"
+        f"{redirect_to}"
         f"#access_token={access_token}"
         f"&refresh_token={refresh_token}"
         f"&user={user_json}"

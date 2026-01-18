@@ -32,11 +32,12 @@ class GoogleOAuthService:
         self.user_service = UserService(db)
         self.token_service = TokenService(db)
 
-    def get_authorization_url(self, state: str | None = None) -> str:
+    def get_authorization_url(self, redirect_uri: str, state: str | None = None) -> str:
         """
         Get Google OAuth authorization URL.
 
         Args:
+            redirect_uri: Redirect URI to use
             state: Optional state parameter for CSRF protection
 
         Returns:
@@ -48,7 +49,7 @@ class GoogleOAuthService:
         client = AsyncOAuth2Client(
             client_id=settings.google_client_id,
             client_secret=settings.google_client_secret,
-            redirect_uri=settings.google_redirect_uri,
+            redirect_uri=redirect_uri,
         )
 
         url, _ = client.create_authorization_url(
@@ -64,6 +65,7 @@ class GoogleOAuthService:
     async def authenticate(
         self,
         code: str,
+        redirect_uri: str,
         user_agent: str | None = None,
         ip_address: str | None = None,
     ) -> tuple[User, str, str, bool]:
@@ -72,6 +74,7 @@ class GoogleOAuthService:
 
         Args:
             code: Authorization code from Google
+            redirect_uri: Redirect URI used for authorization
             user_agent: Client user agent
             ip_address: Client IP address
 
@@ -94,7 +97,7 @@ class GoogleOAuthService:
                         "client_secret": settings.google_client_secret,
                         "code": code,
                         "grant_type": "authorization_code",
-                        "redirect_uri": settings.google_redirect_uri,
+                        "redirect_uri": redirect_uri,
                     },
                 )
 
