@@ -32,7 +32,7 @@ services:
     labels:
       - "traefik.enable=true"
       # Router - Distinct name but SAME Host rule
-      - "traefik.http.routers.fastapi-auth-blue.rule=Host(`auth-test.youssef.run.place`)"
+      - "traefik.http.routers.fastapi-auth-blue.rule=Host(`auth-test.youssef.run.place`) || Host(`auth-test.dhibi.tn`)"
       - "traefik.http.routers.fastapi-auth-blue.entrypoints=websecure"
       - "traefik.http.routers.fastapi-auth-blue.tls.certresolver=myresolver"
       - "traefik.http.routers.fastapi-auth-blue.middlewares=default-chain@file"
@@ -48,7 +48,7 @@ services:
     labels:
       - "traefik.enable=true"
       # Router - Distinct name but SAME Host rule
-      - "traefik.http.routers.fastapi-auth-green.rule=Host(`auth-test.youssef.run.place`)"
+      - "traefik.http.routers.fastapi-auth-green.rule=Host(`auth-test.youssef.run.place`) || Host(`auth-test.dhibi.tn`)"
       - "traefik.http.routers.fastapi-auth-green.entrypoints=websecure"
       - "traefik.http.routers.fastapi-auth-green.tls.certresolver=myresolver"
       - "traefik.http.routers.fastapi-auth-green.middlewares=default-chain@file"
